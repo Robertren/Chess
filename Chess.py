@@ -1,0 +1,137 @@
+from collections import deque
+from ast import literal_eval
+
+
+class Chess(object):
+    def __init__(self, n=8):
+        # Initialize the size of grid
+        self.n = n
+
+    def min_moves(self, start, end, piece):
+        """
+        This function calculates minimum move from start to end using piece, -1 if can't reach
+        :param start: tuple (row, col)
+        :param end: tuple (row, col)
+        :param piece: {"knight", "king", "bishop"}
+        :return: minimum number of moves, -1 if can't reach
+        """
+        #  Set results for knight
+        if piece == "knight":
+            minimum_move = self.bfs(start, end, piece)
+            return minimum_move
+        # general
+        elif piece == "king":
+            minimum_move = self.bfs(start, end, piece)
+            return minimum_move
+        # elephant
+        elif piece == "bishop":
+            minimum_move = self.bfs(start, end, piece)
+            return minimum_move
+
+    def node_filter(self, level_list, visited_node):
+        """
+        This function helps to filter out nodes that is not possible or already visited.
+        :param level_list: A list of tuple
+        :param visited_node: A set of tuple which contains all visited node
+        :return: A list of tuple
+        """
+        filtered_list = list(filter(lambda x: (x[0] < self.n) and
+                                              (x[1] < self.n) and
+                                              (x[0] >= 0) and
+                                              (x[1] >= 0), level_list))
+        unvisited_list = [node for node in filtered_list if node not in visited_node]
+        return unvisited_list
+
+    def node_checker(self, start, end):
+        """
+        This function helps check if start and end are in valid format
+        :param start: tuple (row, col)
+        :param end: tuple (row, col)
+        :return: None
+        """
+        if start == end:
+            raise Exception('Start point and End point are the same')
+        if len(start) != 2 or len(end) != 2:
+            raise Exception('Start point or End point contains unlawful input')
+        level_list = [start, end]
+        if len(self.node_filter(level_list, [])) != 2:
+            raise Exception('Start point or End point contains unlawful input')
+
+    def bfs(self, start, end, piece):
+        self.node_checker(start, end)
+        visited_node = set()
+        step_count = 0
+        queue = deque([self.node_filter([start], visited_node)])
+        visited_node.add(start)
+        while queue:
+            node_list = queue.popleft()
+            level_list = []
+            next_level = []
+            for node in node_list:
+                # Extract a single node on grid
+                row, col = node
+                # For different piece, align different nodes for next step
+                if piece == "king":
+                    level_list.append((row + 1, col))
+                    level_list.append((row + 1, col + 1))
+                    level_list.append((row + 1, col - 1))
+                    level_list.append((row, col + 1))
+                    level_list.append((row, col - 1))
+                    level_list.append((row - 1, col))
+                    level_list.append((row - 1, col - 1))
+                    level_list.append((row - 1, col + 1))
+                elif piece == "knight":
+                    level_list.append((row + 1, col + 2))
+                    level_list.append((row + 1, col - 2))
+                    level_list.append((row - 1, col + 2))
+                    level_list.append((row - 1, col - 2))
+                    level_list.append((row - 2, col + 1))
+                    level_list.append((row - 2, col - 1))
+                    level_list.append((row + 2, col + 1))
+                    level_list.append((row + 2, col - 1))
+                elif piece == "bishop":
+                    for i in range(1, self.n):
+                        level_list.append((row + i, col + i))
+                        level_list.append((row + i, col - i))
+                        level_list.append((row - i, col + i))
+                        level_list.append((row - i, col - i))
+                # Filter out all unlawful input in the level list
+                filtered_list = self.node_filter(level_list, visited_node)
+                # If the result is in the filtered list, means we reached the end
+                if end in filtered_list:
+                    step_count += 1
+                    return step_count
+                # Add all possible nodes to next level list
+                next_level += filtered_list
+                # Add visited node to the visited set
+                for node in filtered_list:
+                    visited_node.add(node)
+            if next_level:
+                queue.append(next_level)
+            step_count += 1
+        return -1
+
+    def test(self):
+        # These are the test cases generated by author. It will assert if result is wrong
+        assert 2 == self.min_moves((4, 5), (3, 2), "knight")
+        assert 3 == self.min_moves((4, 5), (1, 1), "knight")
+        assert -1 == self.min_moves((1, 2), (1, 1), "bishop")
+        assert 2 == self.min_moves((1, 1), (1, 3), "bishop")
+        assert 2 == self.min_moves((1, 1), (1, 3), "king")
+        assert 7 == self.min_moves((0, 0), (7, 7), "king")
+
+
+if __name__ == "__main__":
+    chess = Chess()
+    chess.test()
+    while True:
+        start = input("Please enter a start point in the format (row, col) on the grid, EXIT to leave: ")
+        end = input("Please enter a end point in the format (row, col) on the grid, EXIT to leave: ")
+        if start.lower() == "exit" or end.lower() == "exit":
+            break
+        piece = input("Please enter a piece you want to play, choose in bishop, king or knight:")
+        min_moves = chess.min_moves(literal_eval(start), literal_eval(end), piece.lower())
+        if min_moves == -1:
+            print("From start to end using {0} is not possible".format(str(piece)))
+        else:
+            print("The minimum move from start to end using {0} is {1}". format(str(piece), str(min_moves)))
